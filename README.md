@@ -1,8 +1,7 @@
 # Face_Detection
+![Logo](https://media.licdn.com/dms/image/v2/C4D12AQGX7iDfdCYdVw/article-cover_image-shrink_600_2000/article-cover_image-shrink_600_2000/0/1608046439420?e=2147483647&v=beta&t=v4TuOM-dN4uvyOzwamgzkyQitV12HYmRqP5NZo1aRxE)
 
 ## This project implements a web app for facial recognition using Streamlit and DeepFace. Upload images, identify faces by comparing them with a directory, and analyze age, gender, race, and emotions. Features a user-friendly interface with result visualization and developer details.
-
-![Logo](https://media.licdn.com/dms/image/v2/C4D12AQGX7iDfdCYdVw/article-cover_image-shrink_600_2000/article-cover_image-shrink_600_2000/0/1608046439420?e=2147483647&v=beta&t=v4TuOM-dN4uvyOzwamgzkyQitV12HYmRqP5NZo1aRxE)
 
 ## Features
 
