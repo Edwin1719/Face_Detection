@@ -7,7 +7,7 @@ from st_social_media_links import SocialMediaIcons
 import time
 
 # --- Constantes de Configuración ---
-DIRECTORIO_IMAGENES_REFERENCIA = 'FACE_DETECT/Directorio de imagenes'
+DIRECTORIO_IMAGENES_REFERENCIA = 'Face_Detection/Directorio de imagenes'
 MODELO_VERIFICACION = 'VGG-Face'
 ACCIONES_ANALISIS = ['age', 'gender', 'race', 'emotion']
 
