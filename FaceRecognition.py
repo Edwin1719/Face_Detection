@@ -1,109 +1,120 @@
 import streamlit as st
+import face_recognition
 import cv2
 import numpy as np
+from PIL import Image, ImageDraw
 import os
-from deepface import DeepFace
 from st_social_media_links import SocialMediaIcons
-import time
 
-# --- Configuración ---
-DIRECTORIO_IMAGENES_REFERENCIA = 'Face_Detection/Directorio de imagenes'
-MODELO_VERIFICACION = 'VGG-Face'
-ACCIONES_ANALISIS = ['age', 'gender', 'race', 'emotion']
+st.set_page_config(
+    page_title="Reconocimiento facial",
+    page_icon="😊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-st.set_page_config(page_title="Reconocimiento facial", layout="wide")
+def identificarRostro(imagen_buscada):
+    directorioBase = 'Directorio de imagenes'
+    encoding_a_buscar = face_recognition.face_encodings(imagen_buscada)[0]
+    imagen_encontrada = None
+    nombre_archivo_encontrado = None
 
-# --- Logo ---
-st.markdown("""
-    <style>
-    .logo-container { display: flex; align-items: center; }
-    .logo { width: 50px; margin-right: 15px; }
-    .center-text { text-align: center; }
-    </style>
-    <div class="logo-container">
-        <img src="https://previews.123rf.com/images/allismagic/allismagic1710/allismagic171000018/87699325-identificaci%C3%B3n-biom%C3%A9trica-concepto-de-sistema-de-reconocimiento-facial-reconocimiento-facial-icono.jpg" class="logo">
-    </div>
-    """, unsafe_allow_html=True)
+    for filename in os.listdir(directorioBase):
+        file_path = os.path.join(directorioBase, filename)
+        if not filename.lower().endswith(('.jpg', '.jpeg')) or os.path.isdir(file_path):
+            continue
 
-# --- Función Auxiliar ---
-def cargar_imagen(bytes_data):
-    nparr = np.frombuffer(bytes_data, np.uint8)
-    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    return cv2.cvtColor(image, cv2.COLOR_BGR2RGB) if image is not None else None
-
-# --- Identificación de rostro ---
-def identificar_rostro(imagen_path):
-    if not os.path.exists(DIRECTORIO_IMAGENES_REFERENCIA):
-        st.error(f"El directorio '{DIRECTORIO_IMAGENES_REFERENCIA}' no existe.")
-        return None, None
-
-    archivos = [f for f in os.listdir(DIRECTORIO_IMAGENES_REFERENCIA) if os.path.isfile(os.path.join(DIRECTORIO_IMAGENES_REFERENCIA, f))]
-    if not archivos:
-        st.warning("No hay imágenes de referencia.")
-        return None, None
-
-    progress_bar = st.progress(0)
-    for i, archivo in enumerate(archivos):
         try:
-            resultado = DeepFace.verify(imagen_path, os.path.join(DIRECTORIO_IMAGENES_REFERENCIA, archivo), model_name=MODELO_VERIFICACION, enforce_detection=False, silent=True)
-            if resultado.get("verified", False):
-                return archivo, resultado.get("distance")
-        except:
-            pass
-        progress_bar.progress((i + 1) / len(archivos))
+            imagen_comparacion = face_recognition.load_image_file(file_path)
+            encoding_comparacion = face_recognition.face_encodings(imagen_comparacion)[0]
+        except Exception as e:
+            st.warning(f"Error al procesar {filename}: {e}")
+            continue
 
-    return None, None
+        if face_recognition.compare_faces([encoding_a_buscar], encoding_comparacion, tolerance=0.6)[0]:
+            imagen_encontrada = imagen_comparacion
+            nombre_archivo_encontrado = filename
+            break
 
-# --- Análisis Facial ---
-def analizar_imagen(imagen, columna):
-    try:
-        resultados = DeepFace.analyze(img_path=imagen, actions=ACCIONES_ANALISIS, enforce_detection=False, silent=True)
-        if resultados:
-            st.write(f"Edad: {resultados[0].get('age', 'N/A')}, Género: {resultados[0].get('dominant_gender', 'N/A')}, Raza: {resultados[0].get('dominant_race', 'N/A')}, Emoción: {resultados[0].get('dominant_emotion', 'N/A')}")
-    except Exception as e:
-        st.error(f"Error en el análisis facial: {e}")
-
-# --- Procesamiento Principal ---
-def procesar_imagen(image_rgb, origen):
-    st.subheader(f'Procesando imagen desde: {origen}')
-    col1, col2, col3 = st.columns(3)
-    col1.image(image_rgb, caption="Imagen de Entrada", use_column_width=True)
-    
-    temp_path = f"temp_{int(time.time())}.jpg"
-    cv2.imwrite(temp_path, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
-    nombre_match, distancia_match = identificar_rostro(temp_path)
-    
-    if nombre_match:
-        st.success(f"Rostro encontrado: {nombre_match} (Distancia: {distancia_match:.4f})")
-        ref_path = os.path.join(DIRECTORIO_IMAGENES_REFERENCIA, nombre_match)
-        if os.path.exists(ref_path):
-            col2.image(cv2.imread(ref_path), caption=f"Referencia: {nombre_match}", use_column_width=True)
+    if imagen_encontrada is not None:
+        st.success(f"Encontrado: {nombre_archivo_encontrado}")
+        st.balloons()
+        with st.columns([1,1,1,2])[3]:
+            st.markdown("""
+            <div style='text-align: center; font-size: 1.4em;'>
+                <strong>Coincidencia</strong>
+            </div>
+            """, unsafe_allow_html=True)
+            st.image(imagen_encontrada, caption=nombre_archivo_encontrado)
     else:
-        st.warning("No se encontraron coincidencias.")
-    
-    os.remove(temp_path)
-    analizar_imagen(image_rgb, col3)
+        st.error("Celebridad no encontrada")
 
-# --- Interfaz ---
-st.markdown("<h1 style='text-align: center;'>¿IDENTIFICA LA IMAGEN?</h1>", unsafe_allow_html=True)
-st.subheader("Elige una fuente de imagen:")
-
-if st.button("Limpiar / Empezar de Nuevo"):
-    st.rerun()
-
-archivo_subido = st.file_uploader("Cargar una imagen:", type=['jpg', 'png', 'jpeg'])
-captura_webcam = st.camera_input("O tomar una foto con la webcam:")
-
-if archivo_subido:
-    procesar_imagen(cargar_imagen(archivo_subido.getvalue()), f"Archivo: {archivo_subido.name}")
-elif captura_webcam:
-    procesar_imagen(cargar_imagen(captura_webcam.getvalue()), "Webcam")
-
-# --- Redes Sociales ---
-st.markdown("---")
 st.markdown("""
-**Desarrollador:** Edwin Quintero Alzate<br>
-**Email:** egqa1975@gmail.com<br>
-""")
-social_links = ["https://www.facebook.com/edwin.quinteroalzate", "https://www.linkedin.com/in/edwinquintero0329/", "https://github.com/Edwin1719"]
-SocialMediaIcons(social_links).render()
+    <div style='text-align: center;'>
+        <h1>RECONOCIMIENTO FACIAL</h1>
+        <h3>Uso de <a href='https://github.com/ageitgey/face_recognition'>face_recognition</a></h3>
+    </div>
+""", unsafe_allow_html=True)
+
+col1, col2 = st.columns(2)
+with col1:
+    archivo_cargado = st.file_uploader("Sube una imagen", type=['jpg', 'jpeg'])
+with col2:
+    camara = st.camera_input("O toma una foto con la cámara")
+
+imagen_bytes = archivo_cargado.getvalue() if archivo_cargado else camara.getvalue() if camara else None
+
+if imagen_bytes:
+    c1, c2, c3, c4 = st.columns([5,2,4,4])
+    with c1:
+        st.subheader("Imagen seleccionada")
+        st.image(imagen_bytes)
+
+    image = cv2.cvtColor(cv2.imdecode(np.frombuffer(imagen_bytes, np.uint8), 1), cv2.COLOR_BGR2RGB)
+
+    try:
+        encoding = face_recognition.face_encodings(image)[0]
+        landmarks = face_recognition.face_landmarks(image)
+        locations = face_recognition.face_locations(image)
+
+        for (top, right, bottom, left) in locations:
+            rostro = image[top:bottom, left:right]
+            with c2:
+                st.subheader("Rostro ")
+                st.image(Image.fromarray(rostro))
+
+        for face_landmarks in landmarks:
+            pil_image = Image.fromarray(image)
+            d = ImageDraw.Draw(pil_image)
+            for key in face_landmarks:
+                d.line(face_landmarks[key], fill=(255,255,255), width=2)
+            d.rectangle([(left, top), (right, bottom)], outline="yellow", width=2)
+
+            with c3:
+                tabimagen, tabencoding = st.tabs(["Imagen", "Encoding"])
+                with tabimagen:
+                    st.subheader("Puntos clave del rostro")
+                    st.write(", ".join(face_landmarks.keys()))
+                    st.image(pil_image)
+                with tabencoding:
+                    st.code(encoding)
+
+        with c4:
+            identificarRostro(image)
+
+    except IndexError:
+        st.error("No se detectó ningún rostro en la imagen. Intenta de nuevo.")
+
+st.markdown("""
+    <hr>
+    <div style='text-align: center;'>
+        <strong>Desarrollador:</strong> Edwin Quintero Alzate<br>
+        <strong>Email:</strong> egqa1975@gmail.com
+    </div>
+""", unsafe_allow_html=True)
+
+SocialMediaIcons([
+    "https://www.facebook.com/edwin.quinteroalzate",
+    "https://www.linkedin.com/in/edwinquintero0329/",
+    "https://github.com/Edwin1719"
+]).render()
