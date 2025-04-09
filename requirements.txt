@@ -1,6 +1,6 @@
 streamlit         
 opencv-python    
-numpy           
+numpy 
+face_recognition
 Pillow              
-deepface
 st_social_media_links        
