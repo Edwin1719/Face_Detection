@@ -10,8 +10,13 @@ st.set_page_config(
     page_title="Reconocimiento facial",
     page_icon="😊",
     layout="wide",
-    initial_sidebar_state="expanded"
-)
+    initial_sidebar_state="expanded")
+
+# URL de la imagen
+imagen_url = "https://co.nec.com/es_CO/en/global/solutions/biometrics/img/face/face_header_sd.jpg"
+
+# Mostrar la imagen encima del título
+st.image(imagen_url)
 
 def identificarRostro(imagen_buscada):
     directorioBase = 'Directorio de imagenes'
